@@ -272,6 +272,12 @@ map.on('moveend', () => {
   clearTimeout(moveTimer);
   moveTimer = setTimeout(() => { const c = map.getCenter(); if (!S.pin || dist(S.pin, { lat: c.lat, lon: c.lng }) > 0.5) setPin({ lat: c.lat, lon: c.lng }); }, 250);
 });
+// 下の欄の高さが変わると地図の高さも変わる。地図に知らせて、ピンの位置を画面中央に保つ
+// （知らせないと、地図が思う中央と画面のピンがずれ、矢印がピンから離れて描かれる）
+new ResizeObserver(() => {
+  map.invalidateSize({ pan: false });
+  if (S.pin) map.setView([S.pin.lat, S.pin.lon], map.getZoom(), { animate: false });
+}).observe($('map'));
 $('handle').onclick = () => { $('sheet').classList.toggle('open'); setTimeout(() => { map.invalidateSize(); if (S.pin) map.setView([S.pin.lat, S.pin.lon], map.getZoom(), { animate: false }); }, 220); };
 $('btnMore').onclick = () => { const b = $('moreBox'), open = b.style.display === 'none'; b.style.display = open ? 'flex' : 'none'; $('btnMore').textContent = '停車位置メモ・表示名・地図リンク ' + (open ? '▴' : '▾'); if (open && !$('sheet').classList.contains('open')) $('handle').onclick(); };
 $('memo').oninput = renderText; $('displayName').oninput = () => { $('dispTitle').textContent = $('displayName').value; renderText(); };
