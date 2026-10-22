@@ -55,6 +55,15 @@
   .badge.org { background:var(--org-bg); color:var(--org); }
   .hide { display:none !important; }
   .leaflet-control-attribution { font-size:9px; }
+  @media (min-width: 900px) {
+    .page { max-width:1240px; }
+    .info { grid-template-columns:auto 1fr auto 1fr; }
+    .main { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(360px,1fr); align-items:start; }
+    .mapcol { padding:10px 0 0 16px; }
+    .mapbox { height:calc(100dvh - 250px); min-height:520px; margin:0; border-radius:12px; overflow:hidden; border:1px solid var(--line); }
+    .side { max-height:calc(100dvh - 240px); min-height:520px; overflow-y:auto; padding-top:2px; }
+    .side .sec { border-bottom:0; }
+  }
 </style>
 </head>
 <body>
@@ -70,12 +79,16 @@
   <div class="tabs" id="tabs"></div>
   <h1 id="ptTitle"></h1>
   <div class="sub" style="margin:0 16px" id="ptSub"></div>
+  <div class="main">
+  <div class="mapcol">
   <div class="mapbox" id="mapbox">
     <div id="map"></div>
     <svg class="cpin" viewBox="0 0 30 42"><path d="M15 41 C10 30 2 24 2 14 A13 13 0 0 1 28 14 C28 24 20 30 15 41 Z" fill="#c2410c" stroke="#7c2d12" stroke-width="1.5"/><circle cx="15" cy="14" r="5" fill="#fff1e6"/></svg>
     <div class="hint">地図を動かして、オレンジのピンの先を提案する位置に合わせます。緑が今の確定位置です</div>
     <div class="seg"><button id="segMap" class="on">地図</button><button id="segPhoto">写真</button></div>
   </div>
+  </div>
+  <div class="side">
 
   <div id="viewBox">
     <div class="sec">
@@ -107,7 +120,7 @@
       <div class="sub" id="eDirStatus">道路の上にピンを合わせると選べます</div>
       <div class="dirs" id="eDirs"></div>
       <div class="label">停車位置メモ</div>
-      <textarea id="eMemo" rows="2"></textarea>
+      <textarea id="eMemo" rows="2" placeholder="新しい停車位置の説明を書いてください（今のメモは引き継ぎません）"></textarea>
       <div class="label">提案の理由（必須）</div>
       <textarea id="eReason" rows="2" placeholder="例：ロータリーは路線バス専用のため、北側の道路で乗降してください"></textarea>
       <div class="err" id="reasonErr"></div>
@@ -124,6 +137,8 @@
     <div class="sub" style="margin:6px 0 10px">nori・noriの担当者が確認して、確定したらこのページに反映し、ご連絡します。それまでは今の確定位置のままです。</div>
     <div class="row" id="sentSummary"></div>
     <button class="btn" id="btnBack" style="margin-top:12px">確認ページに戻る</button>
+  </div>
+  </div>
   </div>
 </div>
 
@@ -270,7 +285,7 @@ $('btnVerify').onclick = () => {
   const v = $('code').value.trim();
   if (!/^\d{6}$/.test(v)) { $('codeErr').textContent = '6桁の数字を入力してください'; return; }
   if (v !== '482913') { $('codeErr').textContent = 'コードが違います（5回まちがえると、このページは30分使えなくなります）'; return; }
-  $('eMemo').value = C.memo;
+  $('eMemo').value = '';   // 古いメモが残らないよう、提案では空欄から書いてもらう
   show('edit');
 };
 
