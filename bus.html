@@ -15,12 +15,17 @@
   .brand b { font-size:14px; }
   .brand span { font-size:11px; color:var(--muted); }
   .sample { background:var(--warn-bg); color:var(--warn); font-size:12px; padding:6px 16px; }
-  .info { padding:12px 16px; display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:13px; border-bottom:1px solid var(--line); }
+  .info { padding:12px 16px; display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:13px; border-bottom:1px solid var(--line); margin:0; }
   .info dt { color:var(--muted); }
   .info dd { margin:0; }
+  .notice { margin:10px 16px 0; padding:8px 12px; border-radius:10px; font-size:13px; background:var(--org-bg); color:var(--org); }
+  .notice.teal { background:#e9f7f1; color:var(--teal-d); }
   .tabs { display:flex; gap:6px; padding:10px 16px 0; overflow-x:auto; }
-  .tab { flex:0 0 auto; border:1px solid #cfd4da; border-radius:999px; padding:7px 12px; font-size:13px; background:#fff; color:#1f2328; text-decoration:none; }
+  .tab { flex:0 0 auto; border:1px solid #cfd4da; border-radius:999px; padding:7px 12px; font-size:13px; background:#fff; color:#1f2328; }
   .tab.on { background:var(--teal); border-color:var(--teal); color:#fff; }
+  .editing .tab.on { background:var(--org); border-color:var(--org); }
+  .tab .dot { display:inline-block; font-size:10px; margin-left:4px; padding:1px 6px; border-radius:999px; background:var(--org-bg); color:var(--org); }
+  .tab.on .dot { background:#fff; }
   h1 { font-size:18px; margin:10px 16px 2px; }
   .sub { font-size:12px; color:var(--muted); }
   .mapbox { position:relative; height:46vh; min-height:280px; margin:10px 0 0; }
@@ -38,30 +43,32 @@
   .links { display:flex; gap:16px; margin-top:8px; font-size:13px; }
   .links a { color:var(--teal-d); }
   .btn { width:100%; padding:13px; border-radius:12px; border:1px solid #cfd4da; background:#fff; font-size:15px; }
-  .btn.primary { background:var(--teal); border-color:var(--teal); color:#fff; font-weight:600; }
   .btn.orange { background:var(--org); border-color:var(--org); color:#fff; font-weight:600; }
+  .btn.small { padding:8px; font-size:13px; }
   .card { margin:12px 16px; padding:14px; border:1px solid var(--line); border-radius:14px; }
   .card.org { border-color:#f3c7a5; background:var(--org-bg); }
-  input, textarea { font:inherit; font-size:16px; padding:10px 12px; border:1px solid #cfd4da; border-radius:10px; width:100%; }
+  input, textarea { font:inherit; font-size:16px; padding:10px 12px; border:1px solid #cfd4da; border-radius:10px; width:100%; background:#fff; }
   .code { letter-spacing:8px; text-align:center; font-size:22px; }
   .err { color:var(--err); font-size:12px; margin-top:4px; min-height:16px; }
+  .ok { color:var(--teal-d); }
   .dirs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
   .dirs.one { grid-template-columns:1fr; }
   .dir { border:1px solid #cfd4da; border-radius:12px; background:#fff; padding:10px 6px; font-size:14px; line-height:1.35; text-align:center; }
   .dir .arr { font-size:20px; display:block; }
-  .dir.on { border:2px solid var(--org); background:var(--org-bg); color:var(--org); }
+  .dir.on { border:2px solid var(--org); background:#fff; color:var(--org); }
   .label { font-size:12px; color:var(--muted); margin:10px 0 6px; }
-  .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; background:#e9f7f1; color:var(--teal-d); margin-left:6px; vertical-align:2px; }
-  .badge.org { background:var(--org-bg); color:var(--org); }
+  .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; background:var(--org-bg); color:var(--org); margin-left:6px; vertical-align:2px; }
+  .chg { border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-top:8px; font-size:13px; background:#fff; }
+  .chg b { font-size:14px; }
   .hide { display:none !important; }
   .leaflet-control-attribution { font-size:9px; }
   @media (min-width: 900px) {
     .page { max-width:1240px; }
     .info { grid-template-columns:auto 1fr auto 1fr; }
-    .main { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(360px,1fr); align-items:start; }
+    .main { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(380px,1fr); align-items:start; }
     .mapcol { padding:10px 0 0 16px; }
-    .mapbox { height:calc(100dvh - 250px); min-height:520px; margin:0; border-radius:12px; overflow:hidden; border:1px solid var(--line); }
-    .side { max-height:calc(100dvh - 240px); min-height:520px; overflow-y:auto; padding-top:2px; }
+    .mapbox { height:calc(100dvh - 270px); min-height:520px; margin:0; border-radius:12px; overflow:hidden; border:1px solid var(--line); }
+    .side { max-height:calc(100dvh - 260px); min-height:520px; overflow-y:auto; padding-top:2px; }
     .side .sec { border-bottom:0; }
   }
 </style>
@@ -69,76 +76,92 @@
 <body>
 <div class="page" id="page">
   <div class="brand"><b>nori・nori 乗降位置のご確認</b><span>バス会社様向け</span></div>
-  <div class="sample">試作です。架空の予約で、送った提案はどこにも届きません。確認コードは <b>482913</b> です。</div>
+  <div class="sample">試作です。架空の予約で、送った提案はどこにも届きません。確認コードは <b>482913</b> です（メールは送られません）。</div>
   <dl class="info">
     <dt>宛先</dt><dd>サンプル観光株式会社 様</dd>
     <dt>予約番号</dt><dd>R-0000-0000（サンプル）</dd>
     <dt>運行日</dt><dd>2026年11月20日（金）・中型1台</dd>
     <dt>このページの期限</dt><dd>2026年11月27日まで</dd>
   </dl>
+  <div class="notice hide" id="notice"></div>
   <div class="tabs" id="tabs"></div>
   <h1 id="ptTitle"></h1>
   <div class="sub" style="margin:0 16px" id="ptSub"></div>
   <div class="main">
-  <div class="mapcol">
-  <div class="mapbox" id="mapbox">
-    <div id="map"></div>
-    <svg class="cpin" viewBox="0 0 30 42"><path d="M15 41 C10 30 2 24 2 14 A13 13 0 0 1 28 14 C28 24 20 30 15 41 Z" fill="#c2410c" stroke="#7c2d12" stroke-width="1.5"/><circle cx="15" cy="14" r="5" fill="#fff1e6"/></svg>
-    <div class="hint">地図を動かして、オレンジのピンの先を提案する位置に合わせます。緑が今の確定位置です</div>
-    <div class="seg"><button id="segMap" class="on">地図</button><button id="segPhoto">写真</button></div>
-  </div>
-  </div>
-  <div class="side">
-
-  <div id="viewBox">
-    <div class="sec">
-      <div class="row">
-        <div class="k">乗降位置</div><div id="vPos">読み込み中…</div>
-        <div class="k">バスの向き</div><div id="vDir">―</div>
-        <div class="k">停車位置メモ</div><div id="vMemo"></div>
+    <div class="mapcol">
+      <div class="mapbox">
+        <div id="map"></div>
+        <svg class="cpin" viewBox="0 0 30 42"><path d="M15 41 C10 30 2 24 2 14 A13 13 0 0 1 28 14 C28 24 20 30 15 41 Z" fill="#c2410c" stroke="#7c2d12" stroke-width="1.5"/><circle cx="15" cy="14" r="5" fill="#fff1e6"/></svg>
+        <div class="hint">地図を動かして、オレンジのピンの先を提案する位置に合わせます。緑が今の確定位置です</div>
+        <div class="seg"><button id="segMap" class="on">地図</button><button id="segPhoto">写真</button></div>
       </div>
-      <div class="links"><a id="lnkSV" target="_blank" rel="noopener" href="#">この向きでストリートビュー</a><a id="lnkMap" target="_blank" rel="noopener" href="#">Googleマップ</a></div>
     </div>
-    <div style="padding:14px 16px 0"><button class="btn orange" id="btnPropose">修正を提案する</button>
-      <div class="sub" style="margin-top:6px">入れない・停めにくいなど、位置や向きを変えたほうがよいときに使います。提案は nori・nori の担当者が確認してから確定します。</div></div>
-  </div>
+    <div class="side">
+      <div id="viewBox">
+        <div class="sec">
+          <div class="row">
+            <div class="k">乗降位置</div><div id="vPos">読み込み中…</div>
+            <div class="k">バスの向き</div><div id="vDir">―</div>
+            <div class="k">停車位置メモ</div><div id="vMemo"></div>
+          </div>
+          <div class="links"><a id="lnkSV" target="_blank" rel="noopener" href="#">この向きでストリートビュー</a><a id="lnkMap" target="_blank" rel="noopener" href="#">Googleマップ</a></div>
+        </div>
+        <div style="padding:14px 16px 0"><button class="btn orange" id="btnPropose">修正を提案する</button>
+          <div class="sub" style="margin-top:6px">全地点の位置・向き・停車位置メモを直して、最後にまとめて送れます。押すと、ご登録のメールアドレスに確認コード（60分有効）をお送りします。送ったあとは nori・nori の担当者が確認して確定します。</div></div>
+      </div>
 
-  <div class="card hide" id="codeBox">
-    <b>確認コードを入力してください</b>
-    <div class="sub" style="margin:6px 0 10px">ご登録のメールアドレス（s●●●●@sample-kanko.example）に6桁のコードを送りました。有効期限は10分です。</div>
-    <input class="code" id="code" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code">
-    <div class="err" id="codeErr"></div>
-    <button class="btn orange" id="btnVerify">確認する</button>
-    <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:13px"><a href="#" id="lnkResend" style="color:var(--teal-d)">コードを送り直す</a><a href="#" id="lnkCancel1" style="color:var(--muted)">やめる</a></div>
-  </div>
+      <div class="hide" id="editBox">
+        <div class="card org">
+          <b>この地点の修正</b><span class="badge">まだ送っていません</span>
+          <div class="sub" style="margin-top:4px" id="ePos">―</div>
+          <div class="label">バスの向き</div>
+          <div class="sub" id="eDirStatus">道路の上にピンを合わせると選べます</div>
+          <div class="dirs" id="eDirs"></div>
+          <div class="label">停車位置メモ</div>
+          <textarea id="eMemo" rows="2" placeholder="新しい停車位置の説明を書いてください（今のメモは引き継ぎません）"></textarea>
+          <div id="reasonWrap" class="hide">
+            <div class="label">この地点を直す理由（必須）</div>
+            <textarea id="eReason" rows="2" placeholder="例：ロータリーは路線バス専用のため、北側の道路で乗降してください"></textarea>
+          </div>
+          <div class="row" style="margin-top:10px;grid-template-columns:1fr auto;align-items:center">
+            <div class="sub" id="eState">この地点は変更なし</div>
+            <button class="btn small" id="btnUndoPt" style="width:auto">この地点を元に戻す</button>
+          </div>
+        </div>
+        <div style="padding:0 16px">
+          <button class="btn orange" id="btnToConfirm">まとめて提案する</button>
+          <button class="btn" id="btnQuit" style="margin-top:8px">修正をやめる</button>
+          <div class="err" id="quitAsk"></div>
+        </div>
+      </div>
 
-  <div class="hide" id="editBox">
-    <div class="card org">
-      <b>修正の提案</b><span class="badge org">まだ確定ではありません</span>
-      <div class="sub" style="margin-top:4px" id="ePos">―</div>
-      <div class="label">バスの向き</div>
-      <div class="sub" id="eDirStatus">道路の上にピンを合わせると選べます</div>
-      <div class="dirs" id="eDirs"></div>
-      <div class="label">停車位置メモ</div>
-      <textarea id="eMemo" rows="2" placeholder="新しい停車位置の説明を書いてください（今のメモは引き継ぎません）"></textarea>
-      <div class="label">提案の理由（必須）</div>
-      <textarea id="eReason" rows="2" placeholder="例：ロータリーは路線バス専用のため、北側の道路で乗降してください"></textarea>
-      <div class="err" id="reasonErr"></div>
-      <div class="label">お名前（必須）</div>
-      <input id="eName" placeholder="例：配車担当 山田">
-      <div class="err" id="nameErr"></div>
-      <button class="btn orange" id="btnSend" style="margin-top:6px">提案を送る</button>
-      <button class="btn" id="btnCancel2" style="margin-top:8px">やめる</button>
+      <div class="hide" id="confirmBox">
+        <div class="card org">
+          <b>提案の内容を確認してください</b>
+          <div id="chgList"></div>
+          <div class="err" id="listErr"></div>
+          <div class="label">お名前（必須）</div>
+          <input id="eName" placeholder="例：配車担当 山田">
+          <div class="err" id="nameErr"></div>
+          <div class="label">確認コード（6桁）</div>
+          <div class="sub" id="codeInfo" style="margin-bottom:6px"></div>
+          <input class="code" id="code" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code">
+          <div class="err" id="codeErr"></div>
+          <button class="btn orange" id="btnSend">提案を送る</button>
+          <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:13px">
+            <a href="#" id="lnkResend" style="color:var(--teal-d)">コードを送り直す</a>
+            <a href="#" id="lnkBackEdit" style="color:var(--muted)">修正に戻る</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card hide" id="sentBox">
+        <b>提案を送りました</b>
+        <div class="sub" style="margin:6px 0 10px">nori・noriの担当者が確認して、確定したらこのページに反映し、ご連絡します。それまでは今の確定位置のままです。</div>
+        <div id="sentList"></div>
+        <button class="btn" id="btnBack" style="margin-top:12px">確認ページに戻る</button>
+      </div>
     </div>
-  </div>
-
-  <div class="card hide" id="sentBox">
-    <b>提案を送りました</b>
-    <div class="sub" style="margin:6px 0 10px">nori・noriの担当者が確認して、確定したらこのページに反映し、ご連絡します。それまでは今の確定位置のままです。</div>
-    <div class="row" id="sentSummary"></div>
-    <button class="btn" id="btnBack" style="margin-top:12px">確認ページに戻る</button>
-  </div>
-  </div>
   </div>
 </div>
 
@@ -149,25 +172,15 @@ import Pbf from 'https://esm.sh/pbf@3.2.1';
 const $ = id => document.getElementById(id);
 const COMPASS = ['北', '北東', '東', '南東', '南', '南西', '西', '北西'];
 const ARROWS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'];
+const DEMO_CODE = '482913', CODE_TTL = 60 * 60 * 1000, RESEND_MAX = 3, TRY_MAX = 5;
+const STORE = 'norinori_bus_proposal_demo_v2';
 const POINTS = [
   { key: '1', kind: '配車場所', time: '8:30', name: '新百合ヶ丘駅', lat: 35.6029672, lon: 139.5081318, memo: '南口ロータリーのタクシー乗り場の手前' },
   { key: '2', kind: '目的地', time: '9:20', name: '生田緑地（東口）', lat: 35.6098497, lon: 139.5625241, memo: 'ビジターセンター前で降車' },
   { key: '3', kind: '最終降車地点', time: '14:30', name: '新百合ヶ丘駅', lat: 35.6029672, lon: 139.5081318, memo: '南口ロータリーのタクシー乗り場の手前' },
 ];
-const pt = POINTS.find(p => p.key === new URLSearchParams(location.search).get('p')) || POINTS[0];
 
-$('tabs').innerHTML = POINTS.map(p => `<a class="tab${p === pt ? ' on' : ''}" href="?p=${p.key}">${p.kind} ${p.time}</a>`).join('');
-$('ptTitle').textContent = `${pt.kind}：${pt.name}`;
-$('ptSub').textContent = `${pt.time} 着・この地点専用のページです（URLを送れば運転手さんも見られます）`;
-
-const ATTR = '国土地理院 ／ 道路・駅 © OpenStreetMap contributors';
-const map = L.map('map', { zoomControl: true, inertiaDeceleration: 6000 }).setView([pt.lat, pt.lon], 18);
-const baseMap = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', { maxZoom: 18, attribution: ATTR }).addTo(map);
-const basePhoto = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg', { maxZoom: 18, attribution: ATTR });
-$('segMap').onclick = () => { map.removeLayer(basePhoto); baseMap.addTo(map); $('segMap').classList.add('on'); $('segPhoto').classList.remove('on'); };
-$('segPhoto').onclick = () => { map.removeLayer(baseMap); basePhoto.addTo(map); $('segPhoto').classList.add('on'); $('segMap').classList.remove('on'); };
-new ResizeObserver(() => { map.invalidateSize({ pan: false }); }).observe($('map'));
-
+// ---------- 計算・外部データ（PC版・スマホ版と同じ） ----------
 const toXY = (lat, lon, o) => ({ x: (lon - o.lon) * Math.cos(o.lat * Math.PI / 180) * 111320, y: (lat - o.lat) * 110540 });
 const dist = (a, b) => { const p = toXY(b.lat, b.lon, a); return Math.hypot(p.x, p.y); };
 const bearingOf = (dx, dy) => (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
@@ -175,12 +188,11 @@ const angDiff = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 36
 const compass = b => COMPASS[Math.round(b / 45) % 8];
 const move = (p, b, m) => ({ lat: p.lat + m * Math.cos(b * Math.PI / 180) / 110540, lon: p.lon + m * Math.sin(b * Math.PI / 180) / (111320 * Math.cos(p.lat * Math.PI / 180)) });
 const esc = s => String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
-
+const hhmm = t => { const d = new Date(t); return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
 let nomiChain = Promise.resolve();
 function nominatim(url) { const run = nomiChain.then(() => fetch(url).then(r => r.json())); nomiChain = run.catch(() => null).then(() => new Promise(r => setTimeout(r, 1100))); return run; }
 function placeName(a) { if (!a) return ''; return [a.city || a.town || a.village || '', a.city_district || a.suburb || '', a.quarter || '', a.neighbourhood || ''].filter(Boolean).join(''); }
 async function reverseName(p) { try { const j = await nominatim(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${p.lat}&lon=${p.lon}&zoom=18&accept-language=ja`); return j && j.address ? j.address : null; } catch (e) { return null; } }
-
 let TILE_URL = null;
 const tileCache = new Map();
 const ROAD_CLASSES = new Set(['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'minor', 'service', 'busway']);
@@ -233,73 +245,118 @@ async function labelFor(p, b, stations) {
   return town ? town + '方面' : '';
 }
 const dirText = d => d ? `${compass(d.bearing)}向き${d.label ? '（' + d.label + '）' : ''}・左側で乗降` : '指定なし';
+
+// ---------- 地図 ----------
+const ATTR = '国土地理院 ／ 道路・駅 © OpenStreetMap contributors';
+const map = L.map('map', { zoomControl: true, inertiaDeceleration: 6000 }).setView([POINTS[0].lat, POINTS[0].lon], 18);
+const baseMap = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', { maxZoom: 18, attribution: ATTR }).addTo(map);
+const basePhoto = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg', { maxZoom: 18, attribution: ATTR });
+$('segMap').onclick = () => { map.removeLayer(basePhoto); baseMap.addTo(map); $('segMap').classList.add('on'); $('segPhoto').classList.remove('on'); };
+$('segPhoto').onclick = () => { map.removeLayer(baseMap); basePhoto.addTo(map); $('segPhoto').classList.add('on'); $('segMap').classList.remove('on'); };
 function arrow(p, b, color) {
   const end = move(p, b, 30), h1 = move(end, (b + 150) % 360, 9), h2 = move(end, (b + 210) % 360, 9);
   return L.layerGroup([L.polyline([[p.lat, p.lon], [end.lat, end.lon]], { color, weight: 6 }), L.polyline([[h1.lat, h1.lon], [end.lat, end.lon], [h2.lat, h2.lon]], { color, weight: 6 })]);
 }
 const greenPin = L.divIcon({ className: '', iconSize: [30, 42], iconAnchor: [15, 41], html: '<svg width="30" height="42" viewBox="0 0 30 42"><path d="M15 41 C10 30 2 24 2 14 A13 13 0 0 1 28 14 C28 24 20 30 15 41 Z" fill="#1D9E75" stroke="#0F6E56" stroke-width="1.5"/><circle cx="15" cy="14" r="5" fill="#E1F5EE"/></svg>' });
 
-// ---- 今の確定位置（試作では、施設の近くの道路に合わせた位置を「確定」として見せる） ----
-const C = { pin: { lat: pt.lat, lon: pt.lon }, dir: null, memo: pt.memo };
-let cMarker = null, cArrow = null;
-async function loadConfirmed() {
+// ---------- 状態 ----------
+let cur = POINTS[0];
+let mode = 'view';
+const confirmed = {};            // key → { pin, dir, memo, addr }
+let drafts = {};                 // key → { pin, dir, memo, reason }（送る前の修正。ブラウザに一時保存）
+let codeState = { sentAt: 0, resends: [], tries: 0, lockedUntil: 0 };
+let cLayer = null, eArrow = null, mvTimer = null, eToken = 0, suppressMove = false;
+let fieldsKey = null;            // 入力欄（メモ・理由）に今どの地点の内容が入っているか
+
+function save() { try { localStorage.setItem(STORE, JSON.stringify({ drafts, codeState, mode: mode === 'sent' ? 'view' : mode })); } catch (e) {} }
+function load() { try { const j = JSON.parse(localStorage.getItem(STORE) || 'null'); if (j) { drafts = j.drafts || {}; codeState = { ...codeState, ...(j.codeState || {}) }; return j.mode; } } catch (e) {} return null; }
+
+const confirmedJobs = {};
+function getConfirmed(pt) {
+  if (!confirmedJobs[pt.key]) confirmedJobs[pt.key] = loadConfirmed(pt);
+  return confirmedJobs[pt.key];
+}
+async function loadConfirmed(pt) {
+  const c ={ pin: { lat: pt.lat, lon: pt.lon }, dir: null, memo: pt.memo, addr: '' };
   try {
-    const area = await areaData(C.pin);
-    const road = nearestOnLines(C.pin, area.roads);
+    const area = await areaData(c.pin);
+    const road = nearestOnLines(c.pin, area.roads);
     if (road && road.d < 60) {
-      C.pin = road.point;
-      let b = road.bearing;
-      if (road.item.oneway === -1) b = (b + 180) % 360;
-      C.dir = { bearing: b, label: await labelFor(C.pin, b, area.stations) };
+      c.pin = road.point;
+      let b = road.bearing; if (road.item.oneway === -1) b = (b + 180) % 360;
+      c.dir = { bearing: b, label: await labelFor(c.pin, b, area.stations) };
     }
-  } catch (e) { /* 道路が読めなくても位置だけは出す */ }
-  cMarker = L.marker([C.pin.lat, C.pin.lon], { icon: greenPin, interactive: false }).addTo(map);
-  if (C.dir) cArrow = arrow(C.pin, C.dir.bearing, '#0F6E56').addTo(map);
-  map.setView([C.pin.lat, C.pin.lon], 18);
-  const a = await reverseName(C.pin);
-  C.addr = placeName(a) ? placeName(a) + '付近' : '';
-  $('vPos').textContent = `${pt.name}${C.addr ? '・' + C.addr : ''}`;
-  $('vDir').textContent = dirText(C.dir);
-  $('vMemo').textContent = C.memo;
-  const lat = C.pin.lat.toFixed(6), lon = C.pin.lon.toFixed(6), h = C.dir ? Math.round(C.dir.bearing) : 0;
+  } catch (e) {}
+  const a = await reverseName(c.pin);
+  c.addr = placeName(a) ? placeName(a) + '付近' : '';
+  confirmed[pt.key] = c;
+  return c;
+}
+const isChanged = (key) => {
+  const d = drafts[key], c = confirmed[key];
+  if (!d || !c) return false;
+  return dist(c.pin, d.pin) > 3 || (d.dir && (!c.dir || angDiff(d.dir.bearing, c.dir.bearing) > 10)) || !!(d.memo && d.memo.trim());
+};
+const changedKeys = () => POINTS.map(p => p.key).filter(isChanged);
+
+function renderTabs() {
+  $('tabs').innerHTML = POINTS.map(p => `<button class="tab${p === cur ? ' on' : ''}" data-k="${p.key}">${p.kind} ${p.time}${mode !== 'view' && isChanged(p.key) ? '<span class="dot">変更あり</span>' : ''}</button>`).join('');
+  [...$('tabs').children].forEach(b => b.onclick = () => selectPoint(POINTS.find(p => p.key === b.dataset.k)));
+  $('ptTitle').textContent = `${cur.kind}：${cur.name}`;
+  $('ptSub').textContent = `${cur.time} 着・地点を切り替えて、全地点をまとめて確認・修正できます`;
+  const n = changedKeys().length;
+  $('btnToConfirm').textContent = n ? `まとめて提案する（変更 ${n}地点）` : 'まとめて提案する';
+}
+function notice(html, teal) { const n = $('notice'); n.innerHTML = html; n.className = 'notice' + (teal ? ' teal' : ''); }
+
+async function selectPoint(pt) {
+  if (mode === 'edit') saveCurrentDraft();
+  cur = pt;
+  renderTabs();
+  const c = await getConfirmed(pt);
+  if (cur !== pt) return;
+  if (cLayer) cLayer.remove();
+  cLayer = L.layerGroup([L.marker([c.pin.lat, c.pin.lon], { icon: greenPin, interactive: false })]);
+  if (c.dir) cLayer.addLayer(arrow(c.pin, c.dir.bearing, '#0F6E56'));
+  cLayer.addTo(map);
+  $('vPos').textContent = `${pt.name}${c.addr ? '・' + c.addr : ''}`;
+  $('vDir').textContent = dirText(c.dir);
+  $('vMemo').textContent = c.memo;
+  const lat = c.pin.lat.toFixed(6), lon = c.pin.lon.toFixed(6), h = c.dir ? Math.round(c.dir.bearing) : 0;
   $('lnkSV').href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}&heading=${h}`;
   $('lnkMap').href = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+  if (mode === 'edit') {
+    const d = drafts[pt.key] || { pin: { ...c.pin }, dir: null, memo: '', reason: '' };
+    drafts[pt.key] = d;
+    $('eMemo').value = d.memo || ''; $('eReason').value = d.reason || ''; fieldsKey = pt.key;
+    suppressMove = true;
+    map.setView([d.pin.lat, d.pin.lon], 18, { animate: false });
+    setTimeout(() => { suppressMove = false; }, 400);
+    analyzeDraft(true);
+  } else {
+    map.setView([c.pin.lat, c.pin.lon], 18);
+  }
 }
-
-// ---- 画面の切り替え ----
-function show(mode) {
-  $('viewBox').classList.toggle('hide', mode !== 'view');
-  $('codeBox').classList.toggle('hide', mode !== 'code');
-  $('editBox').classList.toggle('hide', mode !== 'edit');
-  $('sentBox').classList.toggle('hide', mode !== 'sent');
-  $('page').classList.toggle('editing', mode === 'edit');
-  E.on = mode === 'edit';
-  if (mode === 'edit') { map.setView([C.pin.lat, C.pin.lon], 18, { animate: false }); setProposal(C.pin); }
-  else if (eArrow) { eArrow.remove(); eArrow = null; }
+function saveCurrentDraft() {
+  const d = drafts[cur.key]; if (!d || fieldsKey !== cur.key) return;   // 空の入力欄で上書きしない
+  d.memo = $('eMemo').value; d.reason = $('eReason').value;
+  save();
 }
-$('btnPropose').onclick = () => { show('code'); setTimeout(() => $('code').focus(), 50); };
-$('lnkCancel1').onclick = e => { e.preventDefault(); show('view'); };
-$('lnkResend').onclick = e => { e.preventDefault(); $('codeErr').style.color = 'var(--teal-d)'; $('codeErr').textContent = '新しいコードを送りました（試作なので同じ 482913 です）'; };
-$('code').oninput = () => { $('codeErr').textContent = ''; $('codeErr').style.color = ''; };
-$('btnVerify').onclick = () => {
-  const v = $('code').value.trim();
-  if (!/^\d{6}$/.test(v)) { $('codeErr').textContent = '6桁の数字を入力してください'; return; }
-  if (v !== '482913') { $('codeErr').textContent = 'コードが違います（5回まちがえると、このページは30分使えなくなります）'; return; }
-  $('eMemo').value = '';   // 古いメモが残らないよう、提案では空欄から書いてもらう
-  show('edit');
-};
-
-// ---- 提案の入力（ピンは画面中央に固定し、地図を動かす） ----
-const E = { on: false, pin: null, dir: null, token: 0 };
-let eArrow = null, mvTimer = null;
-map.on('moveend', () => { if (!E.on) return; clearTimeout(mvTimer); mvTimer = setTimeout(() => { const c = map.getCenter(); if (!E.pin || dist(E.pin, { lat: c.lat, lon: c.lng }) > 0.5) setProposal({ lat: c.lat, lon: c.lng }); }, 250); });
-async function setProposal(p) {
-  E.pin = p; E.dir = null; if (eArrow) { eArrow.remove(); eArrow = null; }
-  const token = ++E.token, d = dist(C.pin, p);
-  $('ePos').textContent = d < 3 ? '今の確定位置のまま（地図を動かすと位置を変えられます）' : `今の確定位置から約${Math.round(d)}m`;
+function refreshEditState() {
+  const ch = isChanged(cur.key), c = confirmed[cur.key], d = drafts[cur.key];
+  $('reasonWrap').classList.toggle('hide', !ch);
+  const dd = c && d ? dist(c.pin, d.pin) : 0;
+  $('ePos').textContent = dd < 3 ? '今の確定位置のまま（地図を動かすと位置を変えられます）' : `今の確定位置から約${Math.round(dd)}m`;
+  $('eState').textContent = ch ? 'この地点は変更あり（提案に入ります）' : 'この地点は変更なし（提案に入りません）';
+  renderTabs(); save();
+}
+async function analyzeDraft(restoreDir) {
+  const d = drafts[cur.key], token = ++eToken, p = d.pin;
+  if (eArrow) { eArrow.remove(); eArrow = null; }
+  refreshEditState();
   $('eDirStatus').textContent = '道路を調べています…'; $('eDirs').innerHTML = '';
-  let area; try { area = await areaData(p); } catch (e) { if (token === E.token) $('eDirStatus').textContent = '道路データを読めませんでした'; return; }
-  if (token !== E.token) return;
+  let area; try { area = await areaData(p); } catch (e) { if (token === eToken) $('eDirStatus').textContent = '道路データを読めませんでした'; return; }
+  if (token !== eToken) return;
   const road = nearestOnLines(p, area.roads);
   if (!road || road.d > 15) { $('eDirStatus').textContent = '道路の上にピンを合わせると選べます'; return; }
   let dirs = [road.bearing, (road.bearing + 180) % 360];
@@ -307,39 +364,133 @@ async function setProposal(p) {
   if (road.item.oneway === -1) dirs = [(road.bearing + 180) % 360];
   const opts = [];
   for (const b of dirs) opts.push({ b, label: await labelFor(p, b, area.stations) });
-  if (token !== E.token) return;
+  if (token !== eToken) return;
   $('eDirStatus').textContent = dirs.length === 1 ? '一方通行のため、この向きだけです' : '';
   const box = $('eDirs'); box.className = 'dirs' + (opts.length === 1 ? ' one' : ''); box.innerHTML = '';
   opts.forEach(o => {
     const btn = document.createElement('button'); btn.className = 'dir';
     btn.innerHTML = `<span class="arr">${ARROWS[Math.round(o.b / 45) % 8]}</span>${compass(o.b)}向き${o.label ? '<br><span class="sub">' + o.label + '</span>' : ''}`;
-    btn.onclick = () => { [...box.children].forEach(c => c.classList.remove('on')); btn.classList.add('on'); E.dir = { bearing: o.b, label: o.label }; if (eArrow) eArrow.remove(); eArrow = arrow(E.pin, o.b, '#c2410c').addTo(map); };
+    const pick = () => { [...box.children].forEach(c => c.classList.remove('on')); btn.classList.add('on'); d.dir = { bearing: o.b, label: o.label }; if (eArrow) eArrow.remove(); eArrow = arrow(d.pin, o.b, '#c2410c').addTo(map); refreshEditState(); };
+    btn.onclick = pick;
     box.appendChild(btn);
+    if (restoreDir && d.dir && angDiff(d.dir.bearing, o.b) < 20) pick();
   });
 }
-$('eReason').oninput = () => $('reasonErr').textContent = '';
+map.on('moveend', () => {
+  if (mode !== 'edit' || suppressMove) return;
+  clearTimeout(mvTimer);
+  mvTimer = setTimeout(() => {
+    const c = map.getCenter(), d = drafts[cur.key];
+    if (!d || dist(d.pin, { lat: c.lat, lon: c.lng }) <= 0.5) return;
+    d.pin = { lat: c.lat, lon: c.lng }; d.dir = null;
+    analyzeDraft(false);
+  }, 250);
+});
+new ResizeObserver(() => { map.invalidateSize({ pan: false }); const d = mode === 'edit' && drafts[cur.key]; if (d) { suppressMove = true; map.setView([d.pin.lat, d.pin.lon], map.getZoom(), { animate: false }); setTimeout(() => suppressMove = false, 300); } }).observe($('map'));
+$('eMemo').oninput = () => { drafts[cur.key].memo = $('eMemo').value; refreshEditState(); };
+$('eReason').oninput = () => { drafts[cur.key].reason = $('eReason').value; save(); };
+$('btnUndoPt').onclick = () => { const c = confirmed[cur.key]; drafts[cur.key] = { pin: { ...c.pin }, dir: null, memo: '', reason: '' }; selectPoint(cur); };
+
+// ---------- 画面の切り替え ----------
+function show(m) {
+  mode = m;
+  $('viewBox').classList.toggle('hide', m !== 'view');
+  $('editBox').classList.toggle('hide', m !== 'edit');
+  $('confirmBox').classList.toggle('hide', m !== 'confirm');
+  $('sentBox').classList.toggle('hide', m !== 'sent');
+  $('page').classList.toggle('editing', m === 'edit');
+  if (m !== 'edit' && eArrow) { eArrow.remove(); eArrow = null; }
+  if (m === 'view') $('notice').classList.add('hide');
+  save(); renderTabs();
+}
+const codeValid = () => codeState.sentAt && Date.now() - codeState.sentAt < CODE_TTL;
+function sendCode(isResend) {
+  codeState.sentAt = Date.now(); codeState.tries = 0;
+  if (isResend) codeState.resends.push(Date.now());
+  save();
+}
+$('btnPropose').onclick = () => {
+  if (codeValid()) notice(`確認コードは ${hhmm(codeState.sentAt)} に送信済みです（${hhmm(codeState.sentAt + CODE_TTL)} まで有効）。修正が終わったら、最後にまとめて入力します。`);
+  else { sendCode(false); notice(`ご登録のメールアドレス（s●●●●@sample-kanko.example）に確認コードを送りました（${hhmm(codeState.sentAt + CODE_TTL)} まで有効）。修正が終わったら、最後にまとめて入力します。`); }
+  show('edit'); selectPoint(cur);
+};
+$('btnQuit').onclick = () => {
+  if (changedKeys().length && !$('btnQuit').dataset.sure) { $('btnQuit').dataset.sure = '1'; $('quitAsk').textContent = '直した内容は送られずに消えます。もう一度押すとやめます'; return; }
+  delete $('btnQuit').dataset.sure; $('quitAsk').textContent = '';
+  drafts = {}; show('view'); selectPoint(cur);
+};
+$('btnToConfirm').onclick = () => {
+  saveCurrentDraft();
+  const keys = changedKeys();
+  if (!keys.length) { $('quitAsk').textContent = 'どの地点も変更されていません'; return; }
+  $('quitAsk').textContent = '';
+  renderConfirm(); show('confirm');
+};
+function renderConfirm() {
+  const keys = changedKeys();
+  $('chgList').innerHTML = keys.map(k => {
+    const p = POINTS.find(x => x.key === k), d = drafts[k], c = confirmed[k], dd = dist(c.pin, d.pin);
+    const miss = !(d.reason && d.reason.trim());
+    return `<div class="chg"><b>${p.kind} ${p.time}：${esc(p.name)}</b>
+      <div class="sub">位置：${dd < 3 ? '変更なし' : '確定位置から約' + Math.round(dd) + 'm'}／向き：${esc(d.dir ? dirText(d.dir) : (c.dir ? '今のまま' : '指定なし'))}</div>
+      <div class="sub">停車位置メモ：${esc(d.memo && d.memo.trim() ? d.memo.trim() : '（空欄）')}</div>
+      <div class="sub">理由：${miss ? '<span style="color:var(--err)">未入力</span>' : esc(d.reason.trim())}</div>
+      <a href="#" data-k="${k}" class="fix" style="font-size:12px;color:var(--teal-d)">この地点を直す</a></div>`;
+  }).join('');
+  [...document.querySelectorAll('.fix')].forEach(a => a.onclick = e => { e.preventDefault(); show('edit'); selectPoint(POINTS.find(p => p.key === a.dataset.k)); });
+  $('listErr').textContent = '';
+  updateCodeInfo();
+}
+function updateCodeInfo() {
+  $('codeInfo').textContent = codeValid() ? `${hhmm(codeState.sentAt)} にお送りしたコードを入力してください（${hhmm(codeState.sentAt + CODE_TTL)} まで有効）` : 'コードの有効期限が切れています。「コードを送り直す」を押してください';
+}
+$('lnkBackEdit').onclick = e => { e.preventDefault(); show('edit'); selectPoint(cur); };
+$('lnkResend').onclick = e => {
+  e.preventDefault();
+  const hourAgo = Date.now() - 3600e3;
+  codeState.resends = codeState.resends.filter(t => t > hourAgo);
+  if (codeState.resends.length >= RESEND_MAX) { $('codeErr').textContent = `送り直しは1時間に${RESEND_MAX}回までです。しばらくしてからお試しください`; return; }
+  sendCode(true); updateCodeInfo();
+  $('codeErr').innerHTML = '<span class="ok">新しいコードを送りました（試作なので同じ 482913 です）</span>';
+};
+$('code').oninput = () => $('codeErr').textContent = '';
 $('eName').oninput = () => $('nameErr').textContent = '';
-$('btnCancel2').onclick = () => show('view');
 $('btnSend').onclick = () => {
   let ok = true;
-  if (!$('eReason').value.trim()) { $('reasonErr').textContent = '提案の理由を入力してください'; ok = false; }
+  ['listErr', 'nameErr', 'codeErr'].forEach(id => $(id).textContent = '');
+  const keys = changedKeys();
+  const missing = keys.filter(k => !(drafts[k].reason && drafts[k].reason.trim()));
+  if (missing.length) { $('listErr').textContent = `理由が未入力の地点があります（${missing.map(k => POINTS.find(p => p.key === k).kind).join('・')}）。「この地点を直す」から入力してください`; ok = false; }
   if (!$('eName').value.trim()) { $('nameErr').textContent = 'お名前を入力してください'; ok = false; }
+  const v = $('code').value.trim();
+  if (Date.now() < codeState.lockedUntil) { $('codeErr').textContent = `コードを${TRY_MAX}回まちがえたため、${hhmm(codeState.lockedUntil)} まで送れません`; return; }
+  if (!codeValid()) { $('codeErr').textContent = 'コードの有効期限が切れています。送り直してください'; ok = false; }
+  else if (!/^\d{6}$/.test(v)) { $('codeErr').textContent = '6桁の数字を入力してください'; ok = false; }
+  else if (ok && v !== DEMO_CODE) {
+    codeState.tries += 1;
+    if (codeState.tries >= TRY_MAX) { codeState.lockedUntil = Date.now() + 30 * 60e3; $('codeErr').textContent = `コードを${TRY_MAX}回まちがえたため、30分間送れません`; }
+    else $('codeErr').textContent = `コードが違います（あと${TRY_MAX - codeState.tries}回まちがえると30分間送れなくなります）`;
+    save(); return;
+  }
   if (!ok) return;
-  const d = dist(C.pin, E.pin);
-  $('sentSummary').innerHTML = [
-    ['位置', d < 3 ? '変更なし' : `今の確定位置から約${Math.round(d)}m`],
-    ['向き', E.dir ? dirText(E.dir) : '指定なし'],
-    ['停車位置メモ', $('eMemo').value.trim() || '（なし）'],
-    ['理由', $('eReason').value.trim()],
-    ['お名前', $('eName').value.trim()],
-  ].map(([k, v]) => `<div class="k">${k}</div><div>${esc(v)}</div>`).join('');
-  show('sent');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  $('sentList').innerHTML = keys.map(k => { const p = POINTS.find(x => x.key === k); return `<div class="chg"><b>${p.kind} ${p.time}：${esc(p.name)}</b><div class="sub">理由：${esc(drafts[k].reason.trim())}</div></div>`; }).join('') + `<div class="sub" style="margin-top:8px">送った人：${esc($('eName').value.trim())}</div>`;
+  drafts = {}; codeState = { sentAt: 0, resends: [], tries: 0, lockedUntil: 0 };
+  show('sent'); window.scrollTo({ top: 0, behavior: 'smooth' });
 };
-$('btnBack').onclick = () => show('view');
+$('btnBack').onclick = () => { show('view'); selectPoint(cur); };
+window.addEventListener('beforeunload', e => { if ((mode === 'edit' || mode === 'confirm') && changedKeys().length) { e.preventDefault(); e.returnValue = ''; } });
 
-show('view');
-loadConfirmed();
+// ---------- はじめ ----------
+const last = load();
+(async () => {
+  if (last === 'edit' || last === 'confirm') {
+    for (const k of Object.keys(drafts)) await getConfirmed(POINTS.find(p => p.key === k));   // 変更ありの判定に使う
+    if (Object.keys(drafts).length) notice('前回の修正の続きです（まだ送っていません）。');
+    show('edit');
+  } else show('view');
+  await selectPoint(cur);
+  for (const p of POINTS) getConfirmed(p);   // ほかの地点も裏で用意しておく
+})();
 </script>
 </body>
 </html>
