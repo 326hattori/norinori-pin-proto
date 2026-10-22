@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>乗降位置の調整（試作）</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root { --teal:#1D9E75; --teal-d:#0F6E56; --line:#e3e6ea; --muted:#6b7280; --bg:#f6f7f9; --warn-bg:#fdf3e1; --warn:#8a5a00; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: "Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif; background:var(--bg); color:#1f2328; font-size:14px; }
+  header { padding:14px 20px; background:#fff; border-bottom:1px solid var(--line); }
+  header h1 { margin:0; font-size:18px; font-weight:600; }
+  header p { margin:4px 0 0; color:var(--muted); font-size:12px; }
+  .wrap { padding:16px 20px; max-width:1280px; margin:0 auto; }
+  .search { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+  .search input { flex:1; min-width:240px; }
+  input, textarea { font:inherit; padding:8px 10px; border:1px solid #cfd4da; border-radius:8px; background:#fff; width:100%; }
+  button { font:inherit; padding:7px 12px; border:1px solid #cfd4da; border-radius:8px; background:#fff; cursor:pointer; }
+  button:hover { background:#f1f3f5; }
+  button.primary { background:var(--teal); border-color:var(--teal); color:#fff; }
+  button.primary:hover { background:var(--teal-d); }
+  button.chip { border-radius:999px; font-size:12px; padding:5px 12px; }
+  button.dir { width:100%; text-align:left; padding:9px 12px; }
+  button.dir.on { border:2px solid var(--teal); color:var(--teal-d); background:#e9f7f1; }
+  .results { background:#fff; border:1px solid var(--line); border-radius:8px; margin-bottom:10px; display:none; }
+  .results div { padding:8px 12px; border-top:1px solid var(--line); cursor:pointer; }
+  .results div:first-child { border-top:0; }
+  .results div:hover { background:#f1f3f5; }
+  .grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:16px; }
+  #map { height:620px; border-radius:12px; border:1px solid var(--line); }
+  .panel { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; display:flex; flex-direction:column; gap:14px; }
+  .label { font-size:12px; color:var(--muted); margin-bottom:4px; }
+  .sub { font-size:12px; color:var(--muted); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; }
+  .status { font-size:12px; color:var(--muted); }
+  .note { font-size:12px; background:var(--warn-bg); color:var(--warn); padding:6px 10px; border-radius:8px; }
+  .side { font-size:12px; padding:6px 10px; border-radius:8px; background:#e9f7f1; color:var(--teal-d); }
+  .side.cross { background:var(--warn-bg); color:var(--warn); }
+  details summary { cursor:pointer; font-size:12px; color:var(--muted); }
+  .saved { background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:12px; display:none; }
+  .pin-icon { width:30px; height:42px; }
+  .leaflet-control-layers { font-size:13px; border-radius:8px !important; }
+  .leaflet-control-layers-base label { padding:2px 0; }
+  a { color:var(--teal-d); }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } #map { height:460px; } }
+  @media (max-width: 600px) {
+    header { padding:10px 10px; }
+    header h1 { font-size:16px; }
+    header p { display:none; }
+    .wrap { padding:8px 6px; }
+    .search { gap:6px; }
+    .search input { min-width:0; flex-basis:100%; }
+    .search button { flex:1; }
+    .search button.chip { flex:1 1 45%; }
+    #map { height:58vh; min-height:340px; border-radius:8px; }
+    .panel { padding:12px 10px; gap:12px; border-radius:8px; }
+    .grid { gap:10px; }
+    .row button { flex:1 1 100%; }
+    .row a { flex:1 1 100%; }
+    button.dir { font-size:15px; padding:11px 12px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>乗降位置の調整（試作）</h1>
+  <p>バスの乗降位置（ピン・向き・停車位置メモ）を指定する画面の試作です。地図＝国土地理院、道路・駅＝OpenStreetMap（OpenFreeMap経由）、住所＝OpenStreetMap（Nominatim）。本番はGoogleの地図とデータで同じことをする想定です。</p>
+</header>
+<div class="wrap">
+  <div class="saved" id="saved"></div>
+  <div class="search">
+    <input id="q" placeholder="施設名・住所で検索（例：川崎市立麻生中学校）">
+    <button id="btnSearch">検索</button>
+    <button class="chip" data-preset="asao">川崎市立麻生中学校</button>
+    <button class="chip" data-preset="shinyuri">新百合ヶ丘駅</button>
+  </div>
+  <div class="results" id="results"></div>
+  <div class="grid">
+    <div id="map"></div>
+    <div class="panel">
+      <div>
+        <div class="label">選んだ場所（位置を決める元の施設）</div>
+        <div id="facName" style="font-weight:600">まだ選んでいません</div>
+        <div class="sub" id="facAddr"></div>
+      </div>
+      <div>
+        <div class="label">表示名（画面・メール・書類に出る名前）</div>
+        <input id="displayName" placeholder="施設名が初期値">
+      </div>
+      <div>
+        <div class="label">ピンの位置</div>
+        <div id="pinInfo">―</div>
+        <div class="sub" id="pinAddr"></div>
+        <div class="row" style="margin-top:8px">
+          <button id="btnReset">施設の位置に戻す</button>
+          <button id="btnSnap">近くの道路に合わせる</button>
+        </div>
+      </div>
+      <div>
+        <div class="label">バスの向き（任意）</div>
+        <div class="status" id="dirStatus">ピンを道路の上に動かすと選べます</div>
+        <div id="dirButtons" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
+        <div id="sideNote" style="margin-top:6px"></div>
+        <details style="margin-top:6px">
+          <summary>手で向きを決める</summary>
+          <div class="row" style="align-items:center;margin-top:6px">
+            <input type="range" id="manual" min="0" max="359" step="1" value="90" style="flex:1;padding:0">
+            <span id="manualOut" style="min-width:90px">東（90°）</span>
+            <button id="btnManual">この向きにする</button>
+          </div>
+        </details>
+        <div class="row" style="margin-top:8px">
+          <a id="lnkSV" href="#" target="_blank" rel="noopener">この向きでストリートビュー</a>
+          <a id="lnkMap" href="#" target="_blank" rel="noopener">Googleマップで開く</a>
+        </div>
+      </div>
+      <div>
+        <div class="label">停車位置メモ</div>
+        <textarea id="memo" rows="2" placeholder="例：正門の前。通学路の時間帯は避ける"></textarea>
+      </div>
+      <div>
+        <div class="label">バス会社向けの文面（自動）</div>
+        <textarea id="busText" rows="6" readonly style="font-family:Consolas,monospace;font-size:12px;background:#fafbfc"></textarea>
+        <div class="row" style="margin-top:6px;justify-content:space-between">
+          <button id="btnCopy">文面をコピー</button>
+          <button class="primary" id="btnSave">この位置にする</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script type="module">
+import { VectorTile } from 'https://esm.sh/@mapbox/vector-tile@1.3.1';
+import Pbf from 'https://esm.sh/pbf@3.2.1';
+const PRESETS = {
+  asao: { name: '川崎市立麻生中学校', addr: '神奈川県川崎市麻生区上麻生4丁目39-1', lat: 35.5958027, lon: 139.5034141 },
+  shinyuri: { name: '新百合ヶ丘駅', addr: '神奈川県川崎市麻生区上麻生1丁目', lat: 35.6039, lon: 139.5076 },
+};
+const COMPASS = ['北', '北東', '東', '南東', '南', '南西', '西', '北西'];
+const $ = id => document.getElementById(id);
+
+const map = L.map('map', { zoomControl: true }).setView([35.5958, 139.5034], 17);
+const ATTR = '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a> ／ 道路・駅 © OpenStreetMap contributors';
+const baseMap = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', { maxZoom: 18, attribution: ATTR }).addTo(map);
+const basePhoto = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg', { maxZoom: 18, attribution: ATTR });
+L.control.layers({ '地図': baseMap, '航空写真': basePhoto }, null, { collapsed: false, position: 'topright' }).addTo(map);
+
+const pinIcon = L.divIcon({
+  className: '', iconSize: [30, 42], iconAnchor: [15, 41],
+  html: '<svg class="pin-icon" viewBox="0 0 30 42"><path d="M15 41 C10 30 2 24 2 14 A13 13 0 0 1 28 14 C28 24 20 30 15 41 Z" fill="#1D9E75" stroke="#0F6E56" stroke-width="1.5"/><circle cx="15" cy="14" r="5" fill="#E1F5EE"/></svg>',
+});
+const facIcon = L.divIcon({ className: '', iconSize: [14, 14], iconAnchor: [7, 7],
+  html: '<div style="width:14px;height:14px;border-radius:50%;background:#8a8f98;border:2px solid #fff"></div>' });
+
+const S = { fac: null, pin: null, dir: null, road: null, token: 0 };
+let pinMarker = null, facMarker = null, linkLine = null, arrowLayer = null, roadLayer = null;
+
+// ---------- 計算 ----------
+const toXY = (lat, lon, o) => ({ x: (lon - o.lon) * Math.cos(o.lat * Math.PI / 180) * 111320, y: (lat - o.lat) * 110540 });
+const dist = (a, b) => { const p = toXY(b.lat, b.lon, a); return Math.hypot(p.x, p.y); };
+const bearingOf = (dx, dy) => (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
+const angDiff = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+const compass = b => COMPASS[Math.round(b / 45) % 8];
+const move = (p, b, m) => ({
+  lat: p.lat + m * Math.cos(b * Math.PI / 180) / 110540,
+  lon: p.lon + m * Math.sin(b * Math.PI / 180) / (111320 * Math.cos(p.lat * Math.PI / 180)),
+});
+
+// ---------- 外部データ ----------
+let nomiChain = Promise.resolve();
+function nominatim(url) {   // 利用規約：1秒に1回まで
+  const run = nomiChain.then(() => fetch(url, { headers: { 'Accept-Language': 'ja' } }).then(r => r.json()));
+  nomiChain = run.catch(() => null).then(() => new Promise(r => setTimeout(r, 1100)));
+  return run;
+}
+// 道路・駅は OpenFreeMap のベクタータイル（OpenStreetMapのデータ・z14）を周囲3×3枚まとめて読む
+let TILE_URL = null;
+const tileCache = new Map();
+const ROAD_CLASSES = new Set(['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'minor', 'service', 'busway']);
+function tileOf(p, z) {
+  const n = 2 ** z, r = p.lat * Math.PI / 180;
+  return { x: Math.floor((p.lon + 180) / 360 * n), y: Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n) };
+}
+function linesOf(geom) {
+  if (geom.type === 'LineString') return [geom.coordinates];
+  if (geom.type === 'MultiLineString') return geom.coordinates;
+  return [];
+}
+async function loadTile(x, y) {
+  const key = x + '/' + y;
+  if (tileCache.has(key)) return tileCache.get(key);
+  const job = (async () => {
+    if (!TILE_URL) TILE_URL = (await (await fetch('https://tiles.openfreemap.org/planet')).json()).tiles[0];
+    const buf = await (await fetch(TILE_URL.replace('{z}', '14').replace('{x}', x).replace('{y}', y))).arrayBuffer();
+    const vt = new VectorTile(new Pbf(buf));
+    const out = { roads: [], names: [], stations: [] };
+    const tr = vt.layers.transportation;
+    for (let i = 0; tr && i < tr.length; i++) {
+      const f = tr.feature(i), pr = f.properties;
+      if (!ROAD_CLASSES.has(pr.class)) continue;
+      for (const line of linesOf(f.toGeoJSON(x, y, 14).geometry)) out.roads.push({ line, oneway: Number(pr.oneway || 0), cls: pr.class });
+    }
+    const tn = vt.layers.transportation_name;
+    for (let i = 0; tn && i < tn.length; i++) {
+      const f = tn.feature(i), pr = f.properties, name = pr['name:ja'] || pr.name || pr.ref;
+      if (!name) continue;
+      for (const line of linesOf(f.toGeoJSON(x, y, 14).geometry)) out.names.push({ line, name });
+    }
+    const poi = vt.layers.poi;
+    for (let i = 0; poi && i < poi.length; i++) {
+      const f = poi.feature(i), pr = f.properties;
+      if (pr.class !== 'railway' || !['station', 'halt'].includes(pr.subclass)) continue;
+      const g = f.toGeoJSON(x, y, 14).geometry;
+      if (g.type !== 'Point') continue;
+      const name = pr['name:ja'] || pr.name;
+      if (name) out.stations.push({ name: name.endsWith('駅') ? name : name + '駅', lat: g.coordinates[1], lon: g.coordinates[0] });
+    }
+    return out;
+  })();
+  tileCache.set(key, job);
+  job.catch(() => tileCache.delete(key));
+  return job;
+}
+async function areaData(p) {
+  const c = tileOf(p, 14), jobs = [];
+  for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) jobs.push(loadTile(c.x + dx, c.y + dy));
+  const tiles = await Promise.all(jobs), seen = new Set(), area = { roads: [], names: [], stations: [] };
+  for (const t of tiles) {
+    area.roads.push(...t.roads); area.names.push(...t.names);
+    for (const s of t.stations) if (!seen.has(s.name)) { seen.add(s.name); area.stations.push(s); }
+  }
+  return area;
+}
+function nearestOnLines(p, items) {
+  let best = null;
+  for (const it of items) {
+    const g = it.line;
+    for (let i = 0; i + 1 < g.length; i++) {
+      const a = toXY(g[i][1], g[i][0], p), b = toXY(g[i + 1][1], g[i + 1][0], p);
+      const vx = b.x - a.x, vy = b.y - a.y, len2 = vx * vx + vy * vy;
+      if (!len2) continue;
+      let t = -(a.x * vx + a.y * vy) / len2; t = Math.max(0, Math.min(1, t));
+      const cx = a.x + t * vx, cy = a.y + t * vy, d = Math.hypot(cx, cy);
+      if (!best || d < best.d) best = { d, item: it, bearing: bearingOf(vx, vy),
+        point: { lat: p.lat + cy / 110540, lon: p.lon + cx / (111320 * Math.cos(p.lat * Math.PI / 180)) } };
+    }
+  }
+  return best;
+}
+function placeName(a) {
+  if (!a) return '';
+  return [a.city || a.town || a.village || '', a.city_district || a.suburb || '', a.quarter || '', a.neighbourhood || ''].filter(Boolean).join('');
+}
+async function reverseName(p) {
+  try {
+    const j = await nominatim(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${p.lat}&lon=${p.lon}&zoom=18&accept-language=ja`);
+    return j && j.address ? j.address : null;
+  } catch (e) { return null; }
+}
+async function findRoad(p, radius) {
+  const area = await areaData(p);
+  const best = nearestOnLines(p, area.roads);
+  if (!best || best.d > radius) return null;
+  const named = nearestOnLines(best.point, area.names);
+  const tags = { name: named && named.d < 12 ? named.item.name : '', oneway: best.item.oneway };
+  return { d: best.d, bearing: best.bearing, tags, geom: best.item.line.map(c => ({ lat: c[1], lon: c[0] })), point: best.point };
+}
+async function stationsNear(p) {
+  return (await areaData(p)).stations;
+}
+async function labelFor(p, b, stations) {
+  let best = null;
+  for (const s of stations) {
+    const v = toXY(s.lat, s.lon, p), d = Math.hypot(v.x, v.y);
+    if (d < 150 || angDiff(bearingOf(v.x, v.y), b) > 45) continue;
+    if (!best || d < best.d) best = { d, name: s.name };
+  }
+  if (best) return `${best.name}方面`;
+  const a = await reverseName(move(p, b, 1500));
+  const town = a && (a.quarter || a.suburb || a.city_district || a.town || a.city);
+  return town ? `${town}方面` : '';
+}
+
+// ---------- 画面 ----------
+function setFacility(f) {
+  S.fac = f; S.dir = null; S.road = null;
+  $('facName').textContent = f.name;
+  $('facAddr').textContent = f.addr || '';
+  $('displayName').value = f.name;
+  $('memo').value = '';
+  if (facMarker) facMarker.remove();
+  facMarker = L.marker([f.lat, f.lon], { icon: facIcon, interactive: false }).addTo(map).bindTooltip('施設の位置', { permanent: false });
+  setPin({ lat: f.lat, lon: f.lon });
+  map.setView([f.lat, f.lon], 18);
+}
+function setPin(p) {
+  S.pin = p;
+  if (!pinMarker) {
+    pinMarker = L.marker([p.lat, p.lon], { icon: pinIcon, draggable: true, autoPan: true }).addTo(map);
+    pinMarker.on('dragend', () => { const ll = pinMarker.getLatLng(); setPin({ lat: ll.lat, lon: ll.lng }); });
+  } else pinMarker.setLatLng([p.lat, p.lon]);
+  if (linkLine) linkLine.remove();
+  const d = dist(S.fac, p);
+  if (d > 3) linkLine = L.polyline([[S.fac.lat, S.fac.lon], [p.lat, p.lon]], { color: '#8a8f98', weight: 1.5, dashArray: '4 4' }).addTo(map);
+  $('pinInfo').textContent = d <= 3 ? '施設の位置（初期値）' : `施設から約${Math.round(d)}m`;
+  $('pinAddr').textContent = '住所を調べています…';
+  S.dir = null; drawArrow(); renderText();
+  analyze();
+}
+async function analyze() {
+  const token = ++S.token, p = S.pin;
+  reverseName(p).then(a => { if (token === S.token) { const n = placeName(a); $('pinAddr').textContent = n ? n + '付近' : ''; renderText(); } });
+  $('dirStatus').textContent = '道路を調べています…';
+  $('dirButtons').innerHTML = ''; $('sideNote').innerHTML = '';
+  if (roadLayer) { roadLayer.remove(); roadLayer = null; }
+  let road;
+  try { road = await findRoad(p, 20); } catch (e) {
+    if (token === S.token) $('dirStatus').textContent = '道路データを読めませんでした（混雑時は少し待って、ピンを少し動かしてください）。手で向きを決めることもできます';
+    return;
+  }
+  if (token !== S.token) return;
+  S.road = road;
+  if (!road) { $('dirStatus').textContent = 'ピンを道路の上に動かすと選べます（「近くの道路に合わせる」も使えます）'; return; }
+  roadLayer = L.polyline(road.geom.map(g => [g.lat, g.lon]), { color: '#1D9E75', weight: 7, opacity: 0.25 }).addTo(map);
+  const name = road.tags.name || road.tags.ref || '';
+  const ow = road.tags.oneway;
+  let dirs = [road.bearing, (road.bearing + 180) % 360];
+  if (ow === 1) dirs = [road.bearing];
+  if (ow === -1) dirs = [(road.bearing + 180) % 360];
+  $('dirStatus').textContent = (name ? `道路：${name}　` : '') + (dirs.length === 1 ? '一方通行のため、この向きだけです。' : '向きを選んでください。') + ' 駅を探しています…';
+  let stations = [];
+  try { stations = await stationsNear(p); } catch (e) { stations = []; }
+  if (token !== S.token) return;
+  const opts = [];
+  for (const b of dirs) opts.push({ b, label: await labelFor(p, b, stations) });
+  if (token !== S.token) return;
+  $('dirStatus').textContent = (name ? `道路：${name}　` : '') + (dirs.length === 1 ? '一方通行のため、この向きだけです' : '向きを選んでください');
+  const box = $('dirButtons'); box.innerHTML = '';
+  opts.forEach(o => {
+    const btn = document.createElement('button');
+    btn.className = 'dir';
+    const arrow = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'][Math.round(o.b / 45) % 8];
+    btn.textContent = `${arrow} ${compass(o.b)}向き${o.label ? '（' + o.label + '）' : ''}`;
+    btn.onclick = () => chooseDir(o.b, o.label, false);
+    box.appendChild(btn);
+  });
+}
+function chooseDir(b, label, manual) {
+  S.dir = { bearing: b, label, manual };
+  [...$('dirButtons').children].forEach(btn => btn.classList.toggle('on', !manual && btn.textContent.includes(compass(b) + '向き')));
+  const p = S.pin, f = S.fac, v = toXY(f.lat, f.lon, p);
+  const dx = Math.sin(b * Math.PI / 180), dy = Math.cos(b * Math.PI / 180);
+  const cross = dx * v.y - dy * v.x;
+  const side = $('sideNote');
+  if (Math.hypot(v.x, v.y) < 5) side.innerHTML = '<div class="side">道路の左側（歩道側）で乗り降りします</div>';
+  else if (cross > 0) side.innerHTML = '<div class="side">道路の左側＝施設側で乗り降りします</div>';
+  else side.innerHTML = '<div class="side cross">道路の左側＝施設の反対側です（道路を渡ります）。逆向きのほうが安全かもしれません</div>';
+  drawArrow(); renderText();
+}
+function drawArrow() {
+  if (arrowLayer) { arrowLayer.remove(); arrowLayer = null; }
+  if (!S.dir || !S.pin) return;
+  const p = S.pin, b = S.dir.bearing, end = move(p, b, 30);
+  const h1 = move(end, (b + 150) % 360, 9), h2 = move(end, (b + 210) % 360, 9);
+  arrowLayer = L.layerGroup([
+    L.polyline([[p.lat, p.lon], [end.lat, end.lon]], { color: '#0F6E56', weight: 5 }),
+    L.polyline([[h1.lat, h1.lon], [end.lat, end.lon], [h2.lat, h2.lon]], { color: '#0F6E56', weight: 5 }),
+  ]).addTo(map);
+}
+function renderText() {
+  if (!S.pin) return;
+  const p = S.pin, lat = p.lat.toFixed(6), lon = p.lon.toFixed(6);
+  const heading = S.dir ? Math.round(S.dir.bearing) : 0;
+  const sv = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}&heading=${heading}`;
+  const gm = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+  $('lnkSV').href = sv; $('lnkMap').href = gm;
+  const lines = [
+    `配車場所　${$('displayName').value || (S.fac && S.fac.name) || ''}`,
+    `住所：${$('pinAddr').textContent || (S.fac && S.fac.addr) || ''}`,
+  ];
+  if ($('memo').value.trim()) lines.push(`停車位置：${$('memo').value.trim()}`);
+  if (S.dir) lines.push(`向き：${compass(S.dir.bearing)}向き${S.dir.label ? '（' + S.dir.label + '）' : ''}・左側乗降`);
+  lines.push(`地図：${gm}`);
+  if (S.dir) lines.push(`ストリートビュー（この向き）：${sv}`);
+  $('busText').value = lines.join('\n');
+}
+
+// ---------- 操作 ----------
+$('btnReset').onclick = () => S.fac && setPin({ lat: S.fac.lat, lon: S.fac.lon });
+$('btnSnap').onclick = async () => {
+  if (!S.pin) return;
+  $('dirStatus').textContent = '近くの道路を探しています…';
+  try {
+    const r = await findRoad(S.pin, 80);
+    if (r) setPin(r.point); else $('dirStatus').textContent = '80m以内に道路が見つかりませんでした';
+  } catch (e) { $('dirStatus').textContent = '道路データを読めませんでした。少し待ってからもう一度押してください'; }
+};
+$('manual').oninput = e => { const b = Number(e.target.value); $('manualOut').textContent = `${compass(b)}（${b}°）`; };
+$('btnManual').onclick = () => S.pin && chooseDir(Number($('manual').value), '', true);
+$('displayName').oninput = renderText;
+$('memo').oninput = renderText;
+$('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText($('busText').value); $('btnCopy').textContent = 'コピーしました'; } catch (e) { $('busText').select(); } setTimeout(() => $('btnCopy').textContent = '文面をコピー', 1500); };
+$('btnSave').onclick = () => {
+  const el = $('saved');
+  el.style.display = 'block';
+  el.innerHTML = `<div class="label">保存した内容（試作なので、このページの中だけ）</div><div style="white-space:pre-wrap;font-size:13px">${$('busText').value.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</div>`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+document.querySelectorAll('[data-preset]').forEach(b => b.onclick = () => setFacility(PRESETS[b.dataset.preset]));
+async function doSearch() {
+  const q = $('q').value.trim(); if (!q) return;
+  const box = $('results'); box.style.display = 'block'; box.innerHTML = '<div>検索しています…</div>';
+  const esc = s => String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+  const [osm, gsi] = await Promise.all([
+    nominatim(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&countrycodes=jp&accept-language=ja&limit=6&addressdetails=1`).catch(() => []),
+    fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(q)}`).then(r => r.json()).catch(() => []),
+  ]);
+  const items = [];
+  (osm || []).forEach(r => {
+    const nm = r.name || r.display_name.split(',')[0];
+    items.push({ name: nm, sub: r.display_name, addr: placeName(r.address), lat: Number(r.lat), lon: Number(r.lon) });
+  });
+  (gsi || []).slice(0, 6).forEach(r => {
+    const [lon, lat] = r.geometry.coordinates;
+    items.push({ name: r.properties.title, sub: '住所・地名（国土地理院）', addr: r.properties.title, lat, lon });
+  });
+  box.innerHTML = '';
+  if (!items.length) { box.innerHTML = '<div>見つかりませんでした。お店の名前は見つからないことがあります（本番はGoogleの施設検索）。住所でも探せます</div>'; return; }
+  items.forEach(it => {
+    const d = document.createElement('div');
+    d.innerHTML = `<b>${esc(it.name)}</b><div class="sub">${esc(it.sub)}</div>`;
+    d.onclick = () => { box.style.display = 'none'; setFacility({ name: it.name, addr: it.addr, lat: it.lat, lon: it.lon }); };
+    box.appendChild(d);
+  });
+}
+$('btnSearch').onclick = doSearch;
+$('q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+map.on('click', e => { if (S.fac) setPin({ lat: e.latlng.lat, lon: e.latlng.lng }); });
+
+setFacility(PRESETS.asao);
+</script>
+</body>
+</html>
