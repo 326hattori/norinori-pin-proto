@@ -1,5 +1,6 @@
 // 「乗降車場所について」（場所の種類＝駐車場／路上／その他 と、その分岐の入力）。PC版・スマホ版で共通。
 // 使い方: <div id="placeKind"></div> を置き、PlaceKind.mount('placeKind', onChange) を呼ぶ。
+// 路上を選んだときだけ、ページ側が #pkStreetSlot に入れた「バスの向き」を出す。
 // 今の指定内容は PlaceKind.value()。選んでいない分岐の入力は含めない（画面に残っていても使わない）。
 (function () {
   const KINDS = [['parking', '駐車場'], ['street', '路上'], ['other', 'その他']];
@@ -38,6 +39,7 @@
     const kind = pick('pk_kind');
     root.querySelector('#pkParking').style.display = kind === 'parking' ? 'flex' : 'none';
     root.querySelector('#pkOther').style.display = kind === 'other' ? 'flex' : 'none';
+    root.querySelector('#pkStreet').style.display = kind === 'street' ? 'flex' : 'none';
     root.querySelector('#pkNone').style.display = kind ? 'none' : 'block';
     changed();
   }
@@ -92,11 +94,12 @@
         </div>
         <div class="pk-hint">わかる範囲でご入力ください。</div>
       </div>
+      <div class="pk-branch" id="pkStreet" style="display:none"><div id="pkStreetSlot"></div></div>
       <div class="pk-branch" id="pkOther" style="display:none">
         <div class="pk-label">場所の説明</div>
         <textarea id="pkOtherText" rows="3" placeholder="例：〇〇ビル裏の荷さばきスペース。入口は△△通り側"></textarea>
       </div>
-      <div class="pk-hint">駐車場：予約・料金を入力／路上：追加入力なし<br>その他：内容を自由入力</div>`;
+      <div class="pk-hint">駐車場：予約・料金を入力／路上：バスの向きを選ぶ<br>その他：内容を自由入力</div>`;
     root.addEventListener('change', sync);
     root.querySelector('#pkOtherText').addEventListener('input', () => changed());
     sync();

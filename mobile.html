@@ -75,23 +75,21 @@
     <div class="handle" id="handle"></div>
     <div class="sbody">
       <div>
+        <div class="label">選んだ場所（位置を決める元の施設）</div>
         <div class="name" id="dispTitle">川崎市立麻生中学校</div>
         <div class="sub" id="pinInfo">施設の位置（初期値）</div>
       </div>
-      <div>
+      <div><div class="label">表示名（画面・メール・書類に出る名前）</div><input id="displayName"></div>
+      <div id="placeKind"></div>
+      <div id="dirBlock">
         <div class="label">バスの向き（任意）</div>
         <div class="sub" id="dirStatus">道路の上にピンを合わせると選べます</div>
         <div class="dirs" id="dirButtons"></div>
         <div id="sideNote" style="margin-top:8px"></div>
       </div>
-      <div class="sechead">停車位置メモ・表示名・地図リンク</div>
-      <div id="moreBox" style="display:flex;flex-direction:column;gap:12px">
-        <div><div class="label">停車位置メモ</div><textarea id="memo" rows="2" placeholder="例：正門の前。通学路の時間帯は避ける"></textarea></div>
-        <div><div class="label">表示名（画面・メール・書類に出る名前）</div><input id="displayName"></div>
-        <div class="links"><a id="lnkSV" href="#" target="_blank" rel="noopener">この向きでストリートビュー</a><a id="lnkMap" href="#" target="_blank" rel="noopener">Googleマップ</a></div>
-        <div><div class="label">バス会社向けの文面（自動）</div><textarea id="busText" rows="6" readonly style="font-size:12px;font-family:Consolas,monospace;background:#fafbfc"></textarea></div>
-      </div>
-      <div id="placeKind"></div>
+      <div><div class="label">地図リンク</div><div class="links"><a id="lnkSV" href="#" target="_blank" rel="noopener">この向きでストリートビュー</a><a id="lnkMap" href="#" target="_blank" rel="noopener">Googleマップ</a></div></div>
+      <div><div class="label">停車位置メモ</div><textarea id="memo" rows="2" placeholder="例：正門の前。通学路の時間帯は避ける"></textarea></div>
+      <div><div class="label">バス会社向けの文面（自動）</div><textarea id="busText" rows="6" readonly style="font-size:12px;font-family:Consolas,monospace;background:#fafbfc"></textarea></div>
       <button class="primary" id="btnSave">この位置にする</button>
       <div class="sub" style="text-align:center">試作です。保存はされません。<a href="./" style="color:var(--teal-d)">PC版へ</a></div>
     </div>
@@ -248,23 +246,24 @@ function chooseDir(b, label) {
     : '<div class="side cross">左側は施設の反対側です（道路を渡ります）</div>';
   drawArrow(); renderText();
 }
+const dirOn = () => S.dir && (!window.PlaceKind || PlaceKind.value().kind === 'street');
 function drawArrow() {
   if (arrowLayer) { arrowLayer.remove(); arrowLayer = null; }
-  if (!S.dir || !S.pin) return;
+  if (!dirOn() || !S.pin) return;
   const p = S.pin, b = S.dir.bearing, end = move(p, b, 30), h1 = move(end, (b + 150) % 360, 9), h2 = move(end, (b + 210) % 360, 9);
   arrowLayer = L.layerGroup([L.polyline([[p.lat, p.lon], [end.lat, end.lon]], { color: '#0F6E56', weight: 6 }), L.polyline([[h1.lat, h1.lon], [end.lat, end.lon], [h2.lat, h2.lon]], { color: '#0F6E56', weight: 6 })]).addTo(map);
 }
 function renderText() {
   if (!S.pin) return;
-  const lat = S.pin.lat.toFixed(6), lon = S.pin.lon.toFixed(6), h = S.dir ? Math.round(S.dir.bearing) : 0;
+  const lat = S.pin.lat.toFixed(6), lon = S.pin.lon.toFixed(6), h = dirOn() ? Math.round(S.dir.bearing) : 0;
   const sv = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}&heading=${h}`, gm = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
   $('lnkSV').href = sv; $('lnkMap').href = gm;
   const lines = [`配車場所　${$('displayName').value}`, `位置：${$('pinInfo').textContent}`];
   if ($('memo').value.trim()) lines.push('停車位置：' + $('memo').value.trim());
-  if (S.dir) lines.push(`向き：${compass(S.dir.bearing)}向き${S.dir.label ? '（' + S.dir.label + '）' : ''}・左側乗降`);
+  if (dirOn()) lines.push(`向き：${compass(S.dir.bearing)}向き${S.dir.label ? '（' + S.dir.label + '）' : ''}・左側乗降`);
   if (window.PlaceKind) lines.push(PlaceKind.text());
   lines.push('地図：' + gm);
-  if (S.dir) lines.push('ストリートビュー：' + sv);
+  if (dirOn()) lines.push('ストリートビュー：' + sv);
   $('busText').value = lines.join('\n');
 }
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 2200); }
@@ -282,7 +281,7 @@ new ResizeObserver(() => {
   if (S.pin) map.setView([S.pin.lat, S.pin.lon], map.getZoom(), { animate: false });
 }).observe($('map'));
 $('handle').onclick = () => { $('sheet').classList.toggle('open'); setTimeout(() => { map.invalidateSize(); if (S.pin) map.setView([S.pin.lat, S.pin.lon], map.getZoom(), { animate: false }); }, 220); };
-$('memo').oninput = renderText; $('displayName').oninput = () => { $('dispTitle').textContent = $('displayName').value; renderText(); };
+$('memo').oninput = renderText; $('displayName').oninput = renderText;
 $('btnReset').onclick = () => S.fac && map.setView([S.fac.lat, S.fac.lon], 18);
 $('btnHere').onclick = () => {
   if (!navigator.geolocation) return toast('現在地を使えません');
@@ -307,7 +306,8 @@ async function doSearch() {
 }
 $('q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
 
-PlaceKind.mount('placeKind', renderText);
+PlaceKind.mount('placeKind', () => { drawArrow(); renderText(); });
+$('pkStreetSlot').appendChild($('dirBlock'));
 setFacility(ASAO);
 </script>
 </body>

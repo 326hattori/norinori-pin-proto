@@ -98,7 +98,19 @@
           <button id="btnSnap">近くの道路に合わせる</button>
         </div>
       </div>
+      <div id="placeKind"></div>
       <div>
+        <div class="label">地図リンク</div>
+        <div class="row">
+          <a id="lnkSV" href="#" target="_blank" rel="noopener">この向きでストリートビュー</a>
+          <a id="lnkMap" href="#" target="_blank" rel="noopener">Googleマップで開く</a>
+        </div>
+      </div>
+      <div>
+        <div class="label">停車位置メモ</div>
+        <textarea id="memo" rows="2" placeholder="例：正門の前。通学路の時間帯は避ける"></textarea>
+      </div>
+      <div id="dirBlock" data-holding="1">
         <div class="label">バスの向き（任意）</div>
         <div class="status" id="dirStatus">ピンを道路の上に動かすと選べます</div>
         <div id="dirButtons" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
@@ -111,16 +123,7 @@
             <button id="btnManual">この向きにする</button>
           </div>
         </details>
-        <div class="row" style="margin-top:8px">
-          <a id="lnkSV" href="#" target="_blank" rel="noopener">この向きでストリートビュー</a>
-          <a id="lnkMap" href="#" target="_blank" rel="noopener">Googleマップで開く</a>
-        </div>
       </div>
-      <div>
-        <div class="label">停車位置メモ</div>
-        <textarea id="memo" rows="2" placeholder="例：正門の前。通学路の時間帯は避ける"></textarea>
-      </div>
-      <div id="placeKind"></div>
       <div>
         <div class="label">バス会社向けの文面（自動）</div>
         <textarea id="busText" rows="6" readonly style="font-family:Consolas,monospace;font-size:12px;background:#fafbfc"></textarea>
@@ -364,9 +367,10 @@ function chooseDir(b, label, manual) {
   else side.innerHTML = '<div class="side cross">道路の左側＝施設の反対側です（道路を渡ります）。逆向きのほうが安全かもしれません</div>';
   drawArrow(); renderText();
 }
+const dirOn = () => S.dir && (!window.PlaceKind || PlaceKind.value().kind === 'street');
 function drawArrow() {
   if (arrowLayer) { arrowLayer.remove(); arrowLayer = null; }
-  if (!S.dir || !S.pin) return;
+  if (!dirOn() || !S.pin) return;
   const p = S.pin, b = S.dir.bearing, end = move(p, b, 30);
   const h1 = move(end, (b + 150) % 360, 9), h2 = move(end, (b + 210) % 360, 9);
   arrowLayer = L.layerGroup([
@@ -377,7 +381,7 @@ function drawArrow() {
 function renderText() {
   if (!S.pin) return;
   const p = S.pin, lat = p.lat.toFixed(6), lon = p.lon.toFixed(6);
-  const heading = S.dir ? Math.round(S.dir.bearing) : 0;
+  const heading = dirOn() ? Math.round(S.dir.bearing) : 0;
   const sv = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}&heading=${heading}`;
   const gm = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
   $('lnkSV').href = sv; $('lnkMap').href = gm;
@@ -386,10 +390,10 @@ function renderText() {
     `住所：${$('pinAddr').textContent || (S.fac && S.fac.addr) || ''}`,
   ];
   if ($('memo').value.trim()) lines.push(`停車位置：${$('memo').value.trim()}`);
-  if (S.dir) lines.push(`向き：${compass(S.dir.bearing)}向き${S.dir.label ? '（' + S.dir.label + '）' : ''}・左側乗降`);
+  if (dirOn()) lines.push(`向き：${compass(S.dir.bearing)}向き${S.dir.label ? '（' + S.dir.label + '）' : ''}・左側乗降`);
   if (window.PlaceKind) lines.push(PlaceKind.text());
   lines.push(`地図：${gm}`);
-  if (S.dir) lines.push(`ストリートビュー（この向き）：${sv}`);
+  if (dirOn()) lines.push(`ストリートビュー（この向き）：${sv}`);
   $('busText').value = lines.join('\n');
 }
 
@@ -407,7 +411,8 @@ $('manual').oninput = e => { const b = Number(e.target.value); $('manualOut').te
 $('btnManual').onclick = () => S.pin && chooseDir(Number($('manual').value), '', true);
 $('displayName').oninput = renderText;
 $('memo').oninput = renderText;
-PlaceKind.mount('placeKind', renderText);
+PlaceKind.mount('placeKind', () => { drawArrow(); renderText(); });
+$('pkStreetSlot').appendChild($('dirBlock'));
 $('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText($('busText').value); $('btnCopy').textContent = 'コピーしました'; } catch (e) { $('busText').select(); } setTimeout(() => $('btnCopy').textContent = '文面をコピー', 1500); };
 $('btnSave').onclick = () => {
   const el = $('saved');
