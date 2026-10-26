@@ -40,7 +40,7 @@
   .dir.on { border:2px solid var(--teal); background:#e9f7f1; color:var(--teal-d); }
   .side { font-size:12px; padding:7px 10px; border-radius:10px; background:#e9f7f1; color:var(--teal-d); }
   .side.cross { background:var(--warn-bg); color:var(--warn); }
-  .more { border:0; background:none; color:var(--teal-d); font-size:13px; padding:0; text-align:left; }
+  .sechead { color:var(--teal-d); font-size:14px; font-weight:600; }
   input, textarea { font:inherit; font-size:16px; padding:10px 12px; border:1px solid #cfd4da; border-radius:10px; width:100%; }
   .primary { width:100%; padding:14px; border:0; border-radius:12px; background:var(--teal); color:#fff; font-size:16px; font-weight:600; }
   .links { display:flex; gap:14px; font-size:13px; }
@@ -84,13 +84,14 @@
         <div class="dirs" id="dirButtons"></div>
         <div id="sideNote" style="margin-top:8px"></div>
       </div>
-      <button class="more" id="btnMore">停車位置メモ・表示名・地図リンク ▾</button>
-      <div id="moreBox" style="display:none;flex-direction:column;gap:12px">
+      <div class="sechead">停車位置メモ・表示名・地図リンク</div>
+      <div id="moreBox" style="display:flex;flex-direction:column;gap:12px">
         <div><div class="label">停車位置メモ</div><textarea id="memo" rows="2" placeholder="例：正門の前。通学路の時間帯は避ける"></textarea></div>
         <div><div class="label">表示名（画面・メール・書類に出る名前）</div><input id="displayName"></div>
         <div class="links"><a id="lnkSV" href="#" target="_blank" rel="noopener">この向きでストリートビュー</a><a id="lnkMap" href="#" target="_blank" rel="noopener">Googleマップ</a></div>
         <div><div class="label">バス会社向けの文面（自動）</div><textarea id="busText" rows="6" readonly style="font-size:12px;font-family:Consolas,monospace;background:#fafbfc"></textarea></div>
       </div>
+      <div id="placeKind"></div>
       <button class="primary" id="btnSave">この位置にする</button>
       <div class="sub" style="text-align:center">試作です。保存はされません。<a href="./" style="color:var(--teal-d)">PC版へ</a></div>
     </div>
@@ -103,6 +104,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="place-kind.js"></script>
 <script type="module">
 import { VectorTile } from 'https://esm.sh/@mapbox/vector-tile@1.3.1';
 import Pbf from 'https://esm.sh/pbf@3.2.1';
@@ -197,7 +199,7 @@ async function labelFor(p, b, stations) {
 }
 
 function setFacility(f) {
-  S.fac = f; $('displayName').value = f.name; $('dispTitle').textContent = f.name; $('memo').value = '';
+  S.fac = f; $('displayName').value = f.name; $('dispTitle').textContent = f.name; $('memo').value = ''; if (window.PlaceKind && document.querySelector('.pk')) PlaceKind.reset();
   if (facMarker) facMarker.remove();
   facMarker = L.circleMarker([f.lat, f.lon], { radius: 6, color: '#fff', weight: 2, fillColor: '#8a8f98', fillOpacity: 1 }).addTo(map);
   map.setView([f.lat, f.lon], 18);
@@ -260,6 +262,7 @@ function renderText() {
   const lines = [`配車場所　${$('displayName').value}`, `位置：${$('pinInfo').textContent}`];
   if ($('memo').value.trim()) lines.push('停車位置：' + $('memo').value.trim());
   if (S.dir) lines.push(`向き：${compass(S.dir.bearing)}向き${S.dir.label ? '（' + S.dir.label + '）' : ''}・左側乗降`);
+  if (window.PlaceKind) lines.push(PlaceKind.text());
   lines.push('地図：' + gm);
   if (S.dir) lines.push('ストリートビュー：' + sv);
   $('busText').value = lines.join('\n');
@@ -279,7 +282,6 @@ new ResizeObserver(() => {
   if (S.pin) map.setView([S.pin.lat, S.pin.lon], map.getZoom(), { animate: false });
 }).observe($('map'));
 $('handle').onclick = () => { $('sheet').classList.toggle('open'); setTimeout(() => { map.invalidateSize(); if (S.pin) map.setView([S.pin.lat, S.pin.lon], map.getZoom(), { animate: false }); }, 220); };
-$('btnMore').onclick = () => { const b = $('moreBox'), open = b.style.display === 'none'; b.style.display = open ? 'flex' : 'none'; $('btnMore').textContent = '停車位置メモ・表示名・地図リンク ' + (open ? '▴' : '▾'); if (open && !$('sheet').classList.contains('open')) $('handle').onclick(); };
 $('memo').oninput = renderText; $('displayName').oninput = () => { $('dispTitle').textContent = $('displayName').value; renderText(); };
 $('btnReset').onclick = () => S.fac && map.setView([S.fac.lat, S.fac.lon], 18);
 $('btnHere').onclick = () => {
@@ -305,6 +307,7 @@ async function doSearch() {
 }
 $('q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
 
+PlaceKind.mount('placeKind', renderText);
 setFacility(ASAO);
 </script>
 </body>

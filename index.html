@@ -120,6 +120,7 @@
         <div class="label">停車位置メモ</div>
         <textarea id="memo" rows="2" placeholder="例：正門の前。通学路の時間帯は避ける"></textarea>
       </div>
+      <div id="placeKind"></div>
       <div>
         <div class="label">バス会社向けの文面（自動）</div>
         <textarea id="busText" rows="6" readonly style="font-family:Consolas,monospace;font-size:12px;background:#fafbfc"></textarea>
@@ -133,6 +134,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="place-kind.js"></script>
 <script type="module">
 import { VectorTile } from 'https://esm.sh/@mapbox/vector-tile@1.3.1';
 import Pbf from 'https://esm.sh/pbf@3.2.1';
@@ -292,6 +294,7 @@ function setFacility(f) {
   $('facAddr').textContent = f.addr || '';
   $('displayName').value = f.name;
   $('memo').value = '';
+  if (window.PlaceKind && document.querySelector('.pk')) PlaceKind.reset();
   if (facMarker) facMarker.remove();
   facMarker = L.marker([f.lat, f.lon], { icon: facIcon, interactive: false }).addTo(map).bindTooltip('施設の位置', { permanent: false });
   setPin({ lat: f.lat, lon: f.lon });
@@ -384,6 +387,7 @@ function renderText() {
   ];
   if ($('memo').value.trim()) lines.push(`停車位置：${$('memo').value.trim()}`);
   if (S.dir) lines.push(`向き：${compass(S.dir.bearing)}向き${S.dir.label ? '（' + S.dir.label + '）' : ''}・左側乗降`);
+  if (window.PlaceKind) lines.push(PlaceKind.text());
   lines.push(`地図：${gm}`);
   if (S.dir) lines.push(`ストリートビュー（この向き）：${sv}`);
   $('busText').value = lines.join('\n');
@@ -403,6 +407,7 @@ $('manual').oninput = e => { const b = Number(e.target.value); $('manualOut').te
 $('btnManual').onclick = () => S.pin && chooseDir(Number($('manual').value), '', true);
 $('displayName').oninput = renderText;
 $('memo').oninput = renderText;
+PlaceKind.mount('placeKind', renderText);
 $('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText($('busText').value); $('btnCopy').textContent = 'コピーしました'; } catch (e) { $('busText').select(); } setTimeout(() => $('btnCopy').textContent = '文面をコピー', 1500); };
 $('btnSave').onclick = () => {
   const el = $('saved');
